@@ -2,7 +2,7 @@
   "name": "Habit Tracker",
   "short_name": "Habits",
   "description": "Track your daily habits and build streaks",
-  "start_url": "/habit-tracker.html",
+  "start_url": "/index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0a0f0a",
