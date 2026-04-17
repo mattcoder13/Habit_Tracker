@@ -1,7 +1,7 @@
 const CACHE = 'habits-v1';
 
 const FILES = [
-  '/habit-tracker.html',
+  '/index.html',
   '/habit-manifest.json',
   '/habit-icon-192.png',
   '/habit-icon-512.png',
