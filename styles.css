@@ -3,6 +3,7 @@
 
 /* DARK THEME (default) */
 :root, [data-theme="dark"] {
+  color-scheme: dark;
   --bg:        #0a0f0a;
   --bg2:       #0f180f;
   --bg3:       #0d140d;
