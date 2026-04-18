@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>Habit Tracker</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="./habit-manifest.json"/>
+  <meta name="theme-color" content="#7db87d" id="theme-meta"/>
+  <link rel="apple-touch-icon" href="./habit-icon-192.png"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Habits"/>
+
+  <!-- Apply theme before paint to avoid flash -->
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('habittracker_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch(e) {}
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+
+  <link rel="stylesheet" href="./styles.css"/>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="title-row">
+      <div class="title">Habit<br><em>Tracker</em></div>
+      <button class="menu-btn" id="menu-btn" onclick="toggleMenu()" aria-label="Menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+      </button>
+    </div>
+    <div class="date-line" id="date-line"></div>
+    <div class="quote-line" id="quote-line"></div>
+  </div>
+
+  <!-- MENU DROPDOWN -->
+  <div class="menu-panel" id="menu-panel">
+    <button class="menu-item" onclick="exportData()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>Export backup</span>
+    </button>
+    <button class="menu-item" onclick="document.getElementById('import-file').click()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span>Import backup</span>
+    </button>
+    <input type="file" id="import-file" accept=".json,application/json" onchange="importData(this)" style="display:none"/>
+
+    <div class="theme-toggle-group">
+      <span class="theme-toggle-label">Theme</span>
+      <button class="theme-toggle-btn" id="theme-dark"  onclick="setTheme('dark')">Dark</button>
+      <button class="theme-toggle-btn" id="theme-light" onclick="setTheme('light')">Light</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats" id="stats" style="display:none">
+    <div class="stat"><div class="stat-val" id="stat-today">0/0</div><div class="stat-label">Today</div></div>
+    <div class="stat"><div class="stat-val" id="stat-streak">0</div><div class="stat-label">Best streak</div></div>
+    <div class="stat"><div class="stat-val" id="stat-week">0%</div><div class="stat-label">This week</div></div>
+    <div class="stat"><div class="stat-val" id="stat-total">0</div><div class="stat-label">Total done</div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs" id="tabs" style="display:none">
+    <button class="tab active" onclick="switchTab('today')">Today</button>
+    <button class="tab" onclick="switchTab('weekly')">Weekly</button>
+    <button class="tab" onclick="switchTab('calendar')">Calendar</button>
+  </div>
+
+  <!-- ADD HABIT -->
+  <div class="add-area">
+    <div class="add-row">
+      <input class="habit-input" id="habit-input" type="text" placeholder="Add a new habit..." autocomplete="off" autocorrect="off" spellcheck="false"/>
+      <button class="add-btn" id="add-btn" onclick="handleAdd()">+ Add</button>
+    </div>
+
+    <!-- Frequency picker -->
+    <div class="freq-picker" id="freq-picker">
+      <div class="freq-row">
+        <span class="freq-label">Schedule:</span>
+        <button class="freq-opt active" id="fopt-daily"  onclick="setFreqMode('daily')">Daily</button>
+        <button class="freq-opt"        id="fopt-weekly" onclick="setFreqMode('weekly')">Specific days</button>
+        <button class="freq-opt"        id="fopt-xtimes" onclick="setFreqMode('xtimes')">× per week</button>
+      </div>
+
+      <div class="day-picker" id="day-picker">
+        <button class="day-opt" data-day="1" onclick="toggleDay(1)">Mon</button>
+        <button class="day-opt" data-day="2" onclick="toggleDay(2)">Tue</button>
+        <button class="day-opt" data-day="3" onclick="toggleDay(3)">Wed</button>
+        <button class="day-opt" data-day="4" onclick="toggleDay(4)">Thu</button>
+        <button class="day-opt" data-day="5" onclick="toggleDay(5)">Fri</button>
+        <button class="day-opt" data-day="6" onclick="toggleDay(6)">Sat</button>
+        <button class="day-opt" data-day="0" onclick="toggleDay(0)">Sun</button>
+      </div>
+
+      <div class="times-picker" id="times-picker">
+        <span class="times-label">Times per week:</span>
+        <div class="times-stepper">
+          <button class="step-btn" onclick="changeTimesPerWeek(-1)">−</button>
+          <div class="step-val" id="times-val">3</div>
+          <button class="step-btn" onclick="changeTimesPerWeek(1)">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TODAY TAB -->
+  <div id="tab-today">
+    <div class="section-label">Today's habits <span class="section-hint" id="reorder-hint"></span></div>
+    <div class="habits-list" id="habits-list"></div>
+    <div id="empty-state" class="empty" style="display:none">
+      <div class="empty-title">Nothing yet</div>
+      <div class="empty-sub">Add your first habit above</div>
+    </div>
+  </div>
+
+  <!-- WEEKLY TAB -->
+  <div id="tab-weekly" style="display:none">
+    <div class="section-label">Last 7 days</div>
+    <div class="weekly" id="weekly-list"></div>
+  </div>
+
+  <!-- CALENDAR TAB -->
+  <div id="tab-calendar" style="display:none">
+    <div class="section-label">History</div>
+    <div class="range-tabs">
+      <button class="range-tab" data-range="30"  onclick="setRange(30)">30d</button>
+      <button class="range-tab active" data-range="90"  onclick="setRange(90)">90d</button>
+      <button class="range-tab" data-range="180" onclick="setRange(180)">6mo</button>
+      <button class="range-tab" data-range="365" onclick="setRange(365)">1yr</button>
+    </div>
+    <div class="grid-section"><div class="grid" id="cal-grid"></div></div>
+    <div class="grid-legend">
+      <span class="legend-item"><span class="legend-dot"></span> None</span>
+      <span class="legend-item"><span class="legend-dot partial"></span> Some</span>
+      <span class="legend-item"><span class="legend-dot full"></span> All</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-bg" id="edit-modal">
+  <div class="modal edit-modal">
+    <div class="modal-title">Edit habit</div>
+
+    <div class="edit-field">
+      <label class="edit-label">Name</label>
+      <input class="habit-input" id="edit-name" type="text" autocomplete="off"/>
+    </div>
+
+    <div class="edit-field">
+      <label class="edit-label">Schedule</label>
+      <div class="freq-row">
+        <button class="freq-opt" id="eopt-daily"  onclick="setEditFreqMode('daily')">Daily</button>
+        <button class="freq-opt" id="eopt-weekly" onclick="setEditFreqMode('weekly')">Specific days</button>
+        <button class="freq-opt" id="eopt-xtimes" onclick="setEditFreqMode('xtimes')">× per week</button>
+      </div>
+
+      <div class="day-picker" id="edit-day-picker">
+        <button class="day-opt" data-eday="1" onclick="toggleEditDay(1)">Mon</button>
+        <button class="day-opt" data-eday="2" onclick="toggleEditDay(2)">Tue</button>
+        <button class="day-opt" data-eday="3" onclick="toggleEditDay(3)">Wed</button>
+        <button class="day-opt" data-eday="4" onclick="toggleEditDay(4)">Thu</button>
+        <button class="day-opt" data-eday="5" onclick="toggleEditDay(5)">Fri</button>
+        <button class="day-opt" data-eday="6" onclick="toggleEditDay(6)">Sat</button>
+        <button class="day-opt" data-eday="0" onclick="toggleEditDay(0)">Sun</button>
+      </div>
+
+      <div class="times-picker" id="edit-times-picker">
+        <span class="times-label">Times per week:</span>
+        <div class="times-stepper">
+          <button class="step-btn" onclick="changeEditTimes(-1)">−</button>
+          <div class="step-val" id="edit-times-val">3</div>
+          <button class="step-btn" onclick="changeEditTimes(1)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="edit-field">
+      <label class="edit-label">Reminder</label>
+      <div class="reminder-field">
+        <input type="time" id="edit-reminder" />
+        <button class="reminder-clear-btn" onclick="clearEditReminder()">Clear</button>
+      </div>
+    </div>
+
+    <div class="edit-field">
+      <label class="edit-label">Priority</label>
+      <div class="freq-row">
+        <button class="freq-opt" id="priority-opt" onclick="toggleEditPriority()">
+          <span id="priority-opt-label">☆ Not a priority</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="togglePauseHabit()" id="pause-btn">Pause</button>
+      <div style="flex:1"></div>
+      <button class="modal-btn" onclick="closeEditModal()">Cancel</button>
+      <button class="modal-btn primary" onclick="saveEditHabit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-msg" id="modal-msg"></div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn danger" id="modal-confirm"></button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST with optional action -->
+<div class="toast" id="toast">
+  <span id="toast-msg"></span>
+  <button class="toast-action" id="toast-action" style="display:none"></button>
+</div>
+
+<!-- CONFETTI (milestone celebrations) -->
+<div class="confetti-layer" id="confetti-layer"></div>
+
+<script src="./app.js"></script>
+</body>
+</html>
